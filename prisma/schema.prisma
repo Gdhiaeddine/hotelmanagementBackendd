@@ -1,0 +1,207 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider     = "prisma-client"
+  output       = "../generated/prisma"
+  moduleFormat = "cjs"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// Room
+model Room {
+  id           Int           @id @default(autoincrement())
+  number       Int           @unique
+  floor        Int
+  type         RoomType
+  price        Decimal       @db.Decimal(10, 2)
+  status       RoomStatus    @default(DISPONIBLE)
+  note         String?
+  reservations Reservation[]
+}
+
+enum RoomType {
+  SINGLE
+  DOUBLE
+  SUITEJR
+  SUITESR
+}
+
+enum RoomStatus {
+  DISPONIBLE
+  OCCUPE
+  RESERVE
+  NETTOYAGE
+  HORSSERVICE
+}
+
+// #########
+// Product
+model Product {
+  id              Int              @id @unique @default(autoincrement())
+  name            String           @unique
+  categorie       Category         @relation(fields: [categoryId], references: [id])
+  quantity        Decimal          @db.Decimal(10, 2)
+  unite           Unite            @relation(fields: [uniteId], references: [id])
+  productPrices   ProductPrice[]
+  categoryId      Int
+  uniteId         Int
+  stockEntryItems StockEntryItem[]
+}
+
+model StockEntry {
+  id            Int              @id @default(autoincrement())
+  fournisseurId Int
+  fournisseur   Fournisseur      @relation(fields: [fournisseurId], references: [id])
+  entryDate     DateTime
+  createdAt     DateTime         @default(now())
+  items         StockEntryItem[]
+}
+
+model StockEntryItem {
+  id           Int        @id @default(autoincrement())
+  stockEntryId Int
+  productId    Int
+  quantity     Decimal    @db.Decimal(10, 2)
+  price        Float
+  stockEntry   StockEntry @relation(fields: [stockEntryId], references: [id])
+  product      Product    @relation(fields: [productId], references: [id])
+}
+
+model Category {
+  id       Int       @id @default(autoincrement())
+  name     String    @unique
+  products Product[]
+}
+
+model Unite {
+  id       Int       @id @default(autoincrement())
+  name     String    @unique
+  products Product[]
+}
+
+model Depot {
+  id   Int    @id @default(autoincrement())
+  name String @unique
+}
+
+model Fournisseur {
+  id            Int            @id @default(autoincrement())
+  name          String         @unique
+  adress        String
+  zipCode       String
+  ville         String
+  telephone     String
+  productPrices ProductPrice[]
+  stockEntries  StockEntry[]
+}
+
+model ProductPrice {
+  id            Int         @id @default(autoincrement())
+  prix          Decimal
+  productId     Int
+  fournisseurId Int
+  product       Product     @relation(fields: [productId], references: [id])
+  fournisseur   Fournisseur @relation(fields: [fournisseurId], references: [id])
+
+  @@unique([productId, fournisseurId])
+}
+
+// Guest
+model Guest {
+  id          Int       @id @default(autoincrement())
+  guestType   GuestType
+  nom         String?
+  companyName String?
+
+  phone     String
+  email     String? @unique
+  dateBirth String?
+
+  idNumber String
+  idType   IDType
+
+  address     String?
+  nationality String?
+
+  createdAt    DateTime      @default(now())
+  reservations Reservation[]
+}
+
+enum GuestType {
+  INDIVIDUAL
+  COMPANY
+}
+
+enum IDType {
+  PASSPORT
+  NATIONAL_ID
+  DRIVER_LICENSE
+}
+
+// Reservation
+
+// ----------------------
+// RESERVATIONS
+// ----------------------
+model Reservation {
+  id Int @id @default(autoincrement())
+
+  guestId Int
+  guest   Guest @relation(fields: [guestId], references: [id])
+
+  roomId Int
+  room   Room @relation(fields: [roomId], references: [id])
+
+  payer          Boolean
+  reservationPar String // Who made the reservation
+
+  numbers   Int // Number of guests
+  checkIn   DateTime
+  checkOut  DateTime
+  createdAt DateTime @default(now())
+
+  montant         Float
+  status          ReservationStatus
+  reservationType ReservationType? // optional: NIGHT, HOURLY, WEDDING_NIGHT, OTHER
+  notes           String?
+}
+
+enum ReservationStatus {
+  EN_ATTENTE
+  CONFIRME
+  CHECKIN
+  CHECKOUT
+  ANNULE
+}
+
+enum ReservationType {
+  NORMAL
+  HOURLY
+  WEDDING_NIGHT
+  OTHER
+}
+
+
+// Users
+
+model User {
+  id  Int @id @default(autoincrement())
+  nom String
+  username String @unique
+  password String
+  role UserRole
+}
+
+enum UserRole {
+  DIRECTEUR
+  STOCK
+  RECEPTION
+  CHEF_RECEPTION
+}
