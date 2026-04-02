@@ -132,6 +132,8 @@ model Guest {
 
   createdAt    DateTime      @default(now())
   reservations Reservation[]
+
+  notes           String?
 }
 
 enum GuestType {
